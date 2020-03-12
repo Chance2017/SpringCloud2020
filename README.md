@@ -8,8 +8,11 @@ SpringCloud 学习
 5. 过滤显示Files：Settings-Editor-FileTypes，在下面Ignore files and folders中添加;*.idea,*iml。经过此步骤，idea左边工程栏中，将不再显示这些文件，便于查看，此步可不做。
 ## 中间件简介
 **服务注册与发现**：Eureka，Zookeeper，Consul，Nacos
+
 **负载均衡**：Ribbon
+
 **服务调用**：OpenFeign
+
 **服务熔断**：Hystrix
 ## Hystrix
 ### 概述
