@@ -7,7 +7,8 @@ SpringCloud 学习
 encoding 都设置为UTF-8编码；
 4. 注解生效激活：Settings-Build,Execution,Deployment-Compiler-AnnotationProcessors，勾选Enable annotation processing；
 5. 过滤显示Files：Settings-Editor-FileTypes，在下面Ignore files and folders中添加;*.idea,*iml。经过此步骤，idea左边工程栏中，
-将不再显示这些文件，便于查看，此步可不做。
+将不再显示这些文件，便于查看，此步可不做;
+6. 修改hosts：为了在本地测试eureka服务集群，需要在本地hosts文件中添加两行："127.0.0.1 eureka7001.com"、 "127.0.0.1 eureka7002.com"。
 ## 中间件选择
 **服务注册与发现**：Eureka(停更)，Zookeeper，Consul，Nacos  
 **负载均衡**：Ribbon  
