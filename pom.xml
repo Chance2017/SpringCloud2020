@@ -25,6 +25,7 @@
         <module>cloud-consumer-feign-order8083</module>
         <module>cloud-consumer-feign-hystrix-order8084</module>
         <module>cloud-consumer-hystrix-dashboard9001</module>
+        <module>cloud-gateway-gateway9527</module>
     </modules>
 
     <properties>

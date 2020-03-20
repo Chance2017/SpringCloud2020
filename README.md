@@ -13,7 +13,8 @@ encoding 都设置为UTF-8编码；
 **服务注册与发现**：Eureka(停更)，Zookeeper，Consul，Nacos  
 **负载均衡**：Ribbon  
 **服务调用**：OpenFeign  
-**服务熔断**：Hystrix(停更)
+**服务熔断**：Hystrix(停更)  
+**服务网关**：Gateway
 ## Hystrix(停更)
 ### 概述
 Hystrix是一个用于处理分布式系统的**延迟**和**容错**的开源库，在分布式系统里，许多依赖不可避免的会调用失败，比如超时、异常等，Hystrix能够保证在一个依赖的微服务出问题的情况下，**不会导致整体服务失败，避免级联付账，以提高分布式系统的弹性**。  
@@ -26,9 +27,35 @@ Hystrix是一个用于处理分布式系统的**延迟**和**容错**的开源�
 例如，家用保险丝达到最大负荷后跳闸，当服务量达到最大后，直接拒绝访问，然后调用服务降级的方法进行友好提示，进而实行熔断，最后恢复调用链路。
 3. 服务限流(flowlimit)  
 例如，秒杀系统的高并发操作，严禁一窝蜂地拥挤过来，大家排队，一秒钟N个，有序进行。
+## Gateway
+### 概述
+在1.x版本中，服务网关多使用Zuul1.x非Reactor模式的老版本做网关，2.x之后选择使用Gateway替代Zuul。而之所以选择Gateway的原因在于：
+* Zuul1.x属于Netflix，其已经进入维护阶段（虽然Netflix早就发布了最新的Zuul2.x，但SpringCloud貌似并没有整个计划，而且Netflix很多组件
+都进入维护期），而Gateway是SpringCloud团队自己研发的，整合度更高，值得信赖；  
+* Zuul1.x是基于阻塞IO的，而Gateway是基于异步非阻塞模型进行开发的，性能方面不用担心，RPS（每秒请求数）是Zuul的1.6倍；
+* SpringCloud Gateway还支持WebSocket，并且与Spring紧密继承拥有更好的开发体验。
+Spring Cloud Gateway优势在于其建立在SpringBoot2.x，Spring WebFlux和Project Reactor等新技术之上，是原zuul1.x版本的替代，它旨在为
+微服务架构提供一种简单有效的统一的API路由管理方式。为了提升网关的性能，SpringCloud Gateway是基于WebFlux框架实现的，而WebFlux框架底
+层则使用了高性能的Reactor模式通信框架Netty。  
+SpringCloud Gateway的目标是提供统一的路由方式且基于Filter过滤链的方式提供网关的基本功能，例如：反向代理，鉴权，监控/指标，熔断，限流等。
+### 路由配置方法
+#### yml配置(首选)
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: payment_route1          # 路由的ID，没有固定规则，但要求唯一，建议配合服务名
+          uri: http://localhost:8001  # 匹配后提供服务的路由地址
+          predicates:
+            - Path=/payment/get/**    # 断言，路径相匹配的进行路由
 
-
-
+        - id: payment_route2
+          uri: http://localhost:8001
+          predicates:
+            - Path=/payment/lb/**
+```
+#### 代码配置
 
 
 
