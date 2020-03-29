@@ -37,28 +37,73 @@ Hystrix是一个用于处理分布式系统的**延迟**和**容错**的开源�
 Spring Cloud Gateway优势在于其建立在SpringBoot2.x，Spring WebFlux和Project Reactor等新技术之上，是原zuul1.x版本的替代，它旨在为
 微服务架构提供一种简单有效的统一的API路由管理方式。为了提升网关的性能，SpringCloud Gateway是基于WebFlux框架实现的，而WebFlux框架底
 层则使用了高性能的Reactor模式通信框架Netty。  
-SpringCloud Gateway的目标是提供统一的路由方式且基于Filter过滤链的方式提供网关的基本功能，例如：反向代理，鉴权，监控/指标，熔断，限流等。
-### 路由配置方法
+SpringCloud Gateway的目标是提供统一的路由方式且基于Filter过滤链的方式提供网关的基本功能，例如：反向代理，鉴权，监控/指标，熔断，限流等。  
+### 核心概念解释 
+**Route（路由）**：路由是网关的基本单元，由ID、URI、一组Predicate、一组Filter组成，根据Predicate进行匹配转发。  
+**Predicate（谓语、断言）**：路由转发的判断条件，目前SpringCloud Gateway支持多种方式，常见如：Path、Query、Method、Header等。  
+**Filter（过滤器）**：过滤器是路由转发请求时所经过的过滤逻辑，可用于修改请求、响应内容。  
+### 路由与断言配置方法
 #### yml配置(首选)
 ```yaml
 spring:
   cloud:
     gateway:
-      routes:
+      routes: # 路由
         - id: payment_route1          # 路由的ID，没有固定规则，但要求唯一，建议配合服务名
-          uri: http://localhost:8001  # 匹配后提供服务的路由地址
-          predicates:
-            - Path=/payment/get/**    # 断言，路径相匹配的进行路由
+#          uri: http://localhost:8001  # 匹配后提供服务的路由地址
+          uri: lb://cloud-payment-service # 动态匹配注册中心中的路由地址
+          predicates: # 断言匹配条件
+            - Path=/payment/get/**    # 路径相匹配的进行路由
 
         - id: payment_route2
-          uri: http://localhost:8001
-          predicates:
+#          uri: http://localhost:8001
+          uri: lb://cloud-payment-service # 动态匹配注册中心中的路由地址
+          predicates: # 断言
             - Path=/payment/lb/**
+            - After=2020-03-26T21:34:13.609+08:00[Asia/Shanghai]
+#            - Cookie=username,chance  # 设置Cookie限制，值分别是属性名称和正则匹配表达式
+
 ```
 #### 代码配置
+添加Spring配置类
+```java
+@Configuration
+public class GatewayConfig {
+    @Bean
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        RouteLocatorBuilder.Builder routes = builder.routes();
+        routes.route("route_chance1", r -> r.path("/guonei").uri("http://news.baidu.com"));
+        routes.route("route_chance2", r -> r.path("/guoji").uri("http://news.baidu.com"));
+        return routes.build();
+    }
+}
+```
+### 过滤器配置方法
+新建一个过滤器类，通过@Component注解添加到Spring容器中，并实现GlobalFilter, Ordered接口。
+```java
+@Component
+@Slf4j
+public class MyLogGatewayFilter implements GlobalFilter, Ordered {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info("come in MyLogGatewayFilter: {}", new Date());
+        String username = exchange.getRequest().getQueryParams().getFirst("username");
 
+        if (username == null || username.isEmpty()) {
+            log.error("用户名为空，非法用户");
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_ACCEPTABLE);
+            // 非法用户，响应错误
+            return exchange.getResponse().setComplete();
+        }
+        // 合法用户，前往下一条过滤链
+        return chain.filter(exchange);
+    }
 
-
-
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+}
+```
 
 
