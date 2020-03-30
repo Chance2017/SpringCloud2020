@@ -16,7 +16,7 @@ encoding 都设置为UTF-8编码；
 **服务熔断**：Hystrix(停更)  
 **服务网关**：Gateway
 ## 组件选型
-![avatar]()
+![avatar](https://github.com/Chance2017/SpringCloud2020/blob/master/images/SpringCloud组件选型.png)
 ## Hystrix(停更)
 ### 概述
 Hystrix是一个用于处理分布式系统的**延迟**和**容错**的开源库，在分布式系统里，许多依赖不可避免的会调用失败，比如超时、异常等，Hystrix能够保证在一个依赖的微服务出问题的情况下，**不会导致整体服务失败，避免级联付账，以提高分布式系统的弹性**。  
