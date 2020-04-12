@@ -105,5 +105,59 @@ public class MyLogGatewayFilter implements GlobalFilter, Ordered {
     }
 }
 ```
+## SpringCloud Config
+### 概述
+SpringCloud Config为微服务架构中的微服务提供集中化的外部配置支持，配置服务器为各个不同微服务应用的所有环境提供一个中心化的外部配置。
+### 服务端配置公共配置文件的git地址
+```yaml
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/zzyybs/springcloud-config.git
+          search-paths:
+            - springcloud-config
+      label: master # git分支
+```
+### 配置读取规则
+将配置中心服务启动后，即可通过http://{服务地址:端口号}/{配置读取规则}，来获取配置信息。
+常用的配置服务规则有：
+* /{label}/{application}-{profile}.yml(推荐) -> http://localhost:3344/master/config-dev.yml
+* /{application}-{profile}.yml -> http://localhost:3344/config-test.yml(默认读取master分支)
+* /{application}/{profile}[/{label}](返回json串) -> http://localhost:3344/config/dev/master  
+其中：label表示分支，application表示应用名称，profile表示环境。
+### 客户端配置
+```yaml
+spring:
+  cloud:
+    # 客户端Config配置
+    config:
+      label: master # 分支名称
+      name: config  # 配置文件名称
+      profile: test # 配置文件后缀名称（可以设置为部署环境）
+      uri: http://localhost:3344  # 配置中心地址
+```
+### 客户端动态刷新
+避免每次更新配置信息后，都要重启客户端的微服务3355
+* controller组件上添加@RefreshScope注解
+* 添加配置
+```yaml
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+```
+* 发送一次post请求去拉取最新配置：curl -X POST "http://localhost:3355/actuator/refresh"
+## SpringCloud Bus
+### 概述
+SpringCloud Bus是用来将分布式系统的节点与轻量级消息系统链接起来的框架，它整合了Java的事件处理机制和消息中间件的功能。SpringCloud Bus目前支持RabbitMQ和Kafka。
+
+
+
+
+
 
 
