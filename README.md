@@ -130,6 +130,7 @@ spring:
 * /{application}/{profile}[/{label}](返回json串) -> http://localhost:3344/config/dev/master  
 其中：label表示分支，application表示应用名称，profile表示环境。
 ### 客户端配置
+客户端的配置文件需要命名为bootstrap.yml，这样会具有最高优先级。
 ```yaml
 spring:
   cloud:
@@ -153,13 +154,56 @@ management:
         include: "*"
 ```
 * 发送一次post请求去拉取最新配置：curl -X POST "http://localhost:3355/actuator/refresh"
+注：这需要为每个客户端都发送一次post请求，以使得每个客户端都重新拉取最新配置，为避免这种问题，将在下节引入bus总线系统，来完成一次刷新，处处生效功能。
 ## SpringCloud Bus
 ### 概述
 SpringCloud Bus是用来将分布式系统的节点与轻量级消息系统链接起来的框架，它整合了Java的事件处理机制和消息中间件的功能。SpringCloud Bus目前支持RabbitMQ和Kafka。
+### rabbitmq安装
+这里使用docker安装rabbitmq，通过以下命令可以完成rabbitmq的安装与启动，此时通过浏览器访问15672端口即可访问到rabbitmq的控制台页面，默认账户名和密码都是guest。
+```shell script
+# centos7下测试
+systemctl start docker  # 启动docker
+docker ps (-a)          # 查看运行中的docker容器，-a选项可以查看创建的所有容器
+docker search rabbitmq  # 搜索出相关的rabbitmq镜像
+docker pull rabbitmq:3.8.3-management # 冒号后指定版本号，management后缀的一般是带有控制台的版本
+docker images           # 查看所有本地已下载的docker镜像
+docker run -d --name test_rabbitmq_management -p 15672:15672 -p 5672:5672 [IMAGE_ID]  # 创建容器并启动，--name 设置容器名称，-p 指定端口映射，格式为：主机(宿主)端口:容器端口，[IMAGE_ID] 指定要启动的镜像id
+```
+以上是安装在linux系统的虚拟机下，当在本地的windows系统下访问该接口时需要关闭防火墙，或者开放15672端口。同时，还需要修改vmware虚拟机的网络设置，编辑->虚拟网络编辑器->NAT模式->更改设置->NAT设置->添加端口映射。
+```shell script
+service firewalld start   # 开启
+service firewalld restart # 重启
+service firewalld stop    # 关闭
 
+firewall-cmd --list-all   # 查看防火墙规则
 
+firewall-cmd --query-port=15672/tcp              # 查询端口是否开放
+firewall-cmd --permanent --add-port=15672/tcp    # 开放80端口
+firewall-cmd --permanent --remove-port=15672/tcp # 移除端口
 
+firewall-cmd --reload     # 重启防火墙(修改配置后要重启防火墙)
+```
+### 相关配置
+客户端的配置文件需要命名为bootstrap.yml，这样会具有最高优先级。
+```yaml
+# RabbitMQ相关配置(在配置中心服务端和客户端都要配置)
+spring:
+  rabbitmq:
+    host: 192.168.204.128
+    port: 15672
+    username: guest
+    password: guest
 
-
-
-
+# rabbitmq相关配置，暴露bus刷新配置的端点（只需要在配置中心服务端配置即可）
+management:
+  endpoints:  # 暴露bus刷新配置的端点
+    web:
+      exposure:
+        include: 'bus-refresh'
+```
+### 刷新配置
+这里只需要在配置中心服务端发送一次post即可完成，所有服务端和客户端的配置刷新。  
+刷新命令：curl -X POST "http://[配置中心服务端地址:端口号]/actuator/bus-refresh"
+### 定点通知
+bus可以选择只通知某一些客户端而不是广播给所有客户端。  
+为了达到此功能，只需要在刷新命名后面添加上指定的客户端微服务名称(在配置文件中指定spring.application.name)和端口号：curl -X POST "http://[配置中心服务端地址:端口号]/actuator/bus-refresh/[客户端应用程序名称]:[某一客户端端口号]"
